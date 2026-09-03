@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "focus-on",
+    "name": "집중ON",
     "slug": "focus-on",
-    "version": "1.0.0",
+    "version": "1.6.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -10,15 +10,41 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.gaonpf.focuson",
+      "versionCode": 14,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundColor": "#FCE053"
+      },
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK"
+      ],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#5E9C2C"
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Pretendard-Regular.ttf",
+            "./assets/fonts/Pretendard-SemiBold.ttf",
+            "./assets/fonts/Pretendard-Bold.ttf"
+          ]
+        }
+      ]
+    ]
   }
 }
