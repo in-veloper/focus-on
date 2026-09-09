@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -110,12 +109,10 @@ export default function App() {
         <Pressable style={styles.screen} onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.header}>
             <View style={styles.brandRow}>
-              <Image
-                source={require('./assets/art/marker-dino.png')}
-                style={styles.brandIcon}
-                resizeMode="contain"
-              />
-              <Text style={styles.brand}>집중ON</Text>
+              <Text style={styles.brand}>집중</Text>
+              <View style={styles.brandBadge}>
+                <Text style={styles.brandBadgeText}>ON</Text>
+              </View>
             </View>
 
             <Pressable
@@ -312,13 +309,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  brandIcon: { width: 22, height: 22 * (1002 / 990) },
+  // 크레용 그림 톤에 맞춰, 이름 뒤쪽 ON 만 형광펜으로 그은 것처럼 처리한다.
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   brand: {
     fontFamily: font.bold,
     color: colors.text,
-    fontSize: 21,
+    fontSize: 22,
     letterSpacing: -0.5,
+  },
+  brandBadge: {
+    backgroundColor: colors.accent,
+    borderRadius: 9,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    transform: [{ rotate: '-4deg' }],
+  },
+  brandBadgeText: {
+    fontFamily: font.bold,
+    color: colors.onAccent,
+    fontSize: 17,
+    letterSpacing: 0.3,
   },
   gear: {
     width: 40,
