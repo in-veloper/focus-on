@@ -10,7 +10,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.gaonpf.focuson",
+      "package": "com.focuson.app",
       "versionCode": 15,
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
