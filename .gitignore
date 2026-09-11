@@ -41,11 +41,6 @@ yarn-error.*
 /android
 
 # 네이티브 빌드 산출물 (경로가 길어 윈도우에서 git 이 실패한다)
-android/
-ios/
-**/android/build/
-**/android/.cxx/
-**/.gradle/
 
 # 빌드 결과물
 *.apk
