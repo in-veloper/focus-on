@@ -6,19 +6,27 @@ import { MODES, colors, font, radius } from './theme';
 
 // 두 그림은 공룡이 차지하는 비율이 달라서(집중 54%, 휴식 73%),
 // 같은 높이로 그리면 공룡 크기가 달라 보인다. 그래서 배율을 따로 준다.
+// 칸 높이 자체는 이 중 가장 큰 배율(focus)에 맞춰 고정되니, 휴식 쪽
+// 배율을 그 값에 가깝게 올려도 시계 위치는 흔들리지 않는다.
 const ART = {
   focus: { source: require('../assets/art/focus.png'), scale: 1.35 },
-  shortBreak: { source: require('../assets/art/rest.png'), scale: 1 },
-  longBreak: { source: require('../assets/art/rest.png'), scale: 1 },
+  shortBreak: { source: require('../assets/art/rest.png'), scale: 1.3 },
+  longBreak: { source: require('../assets/art/rest.png'), scale: 1.3 },
 };
 
 export default function TimerScreen({ timer, settings, task, onPickTask }) {
   const { width, height } = useWindowDimensions();
   const compact = height < 780;
 
-  const dialSize = Math.min(width - 72, compact ? 262 : 296);
+  const dialSize = Math.min(width - 56, compact ? 292 : 328);
   const art = ART[timer.mode];
-  const artHeight = Math.round((compact ? 62 : 78) * art.scale);
+  const artBase = compact ? 62 : 78;
+  const artHeight = Math.round(artBase * art.scale);
+  // 두 그림의 배율이 달라 높이가 다르다 — 그림 칸 자체는 가장 큰 높이로
+  // 고정해 두고 그 안에서 바닥에 붙여 그려야, 모드가 바뀔 때 칸 높이가
+  // 출렁여서 위쪽 시계가 오르락내리락하는 일이 없다.
+  const maxArtScale = Math.max(...Object.values(ART).map((a) => a.scale));
+  const artBoxHeight = Math.round(artBase * maxArtScale);
 
   const mode = MODES[timer.mode];
   const rounds = Math.max(1, settings.roundsBeforeLong || 4);
@@ -90,11 +98,13 @@ export default function TimerScreen({ timer, settings, task, onPickTask }) {
         </Pressable>
       </View>
 
-      <Image
-        source={art.source}
-        style={[styles.art, { height: artHeight }]}
-        resizeMode="contain"
-      />
+      <View style={[styles.artBox, { height: artBoxHeight }]}>
+        <Image
+          source={art.source}
+          style={[styles.art, { height: artHeight }]}
+          resizeMode="contain"
+        />
+      </View>
     </View>
   );
 }
@@ -171,5 +181,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
 
+  artBox: { width: '100%', justifyContent: 'flex-end' },
   art: { width: '100%' },
 });

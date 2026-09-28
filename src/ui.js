@@ -107,7 +107,6 @@ export function Sheet({ visible, title, onClose, children }) {
       duration: 180,
       useNativeDriver: false,
     }).start(() => {
-      translateY.setValue(0);
       closeRef.current?.();
     });
   };
