@@ -22,10 +22,12 @@ import {
   DEFAULT_SETTINGS,
   dateKey,
   forgetTask,
+  formatMinutes,
   loadSettings,
   loadStats,
   loadTasks,
-  recordSession,
+  recordFocus,
+  recordSessionDone,
   rememberTask,
   saveSettings,
 } from './src/storage';
@@ -75,27 +77,41 @@ export default function App() {
     prepareNotifications();
   }, [ready, settings.notify]);
 
-  const handleFocusDone = useCallback(
-    async (minutes) => {
-      const next = await recordSession({ minutes, task });
+  const handleFocusTime = useCallback(
+    async (start, end) => {
+      const next = await recordFocus({ start, end, task });
       setStats({ ...next });
-      if (task) setTasks(await rememberTask(task));
     },
     [task]
   );
 
-  const timer = useTimer({ settings, onFocusDone: handleFocusDone });
+  const handleSessionDone = useCallback(async () => {
+    const next = await recordSessionDone();
+    setStats({ ...next });
+    if (task) setTasks(await rememberTask(task));
+  }, [task]);
+
+  const timer = useTimer({
+    settings,
+    onFocusTime: handleFocusTime,
+    onSessionDone: handleSessionDone,
+  });
 
   const update = useCallback((patch) => {
     setSettings((prev) => ({ ...prev, ...patch }));
   }, []);
 
-  const chooseTask = useCallback(async (name) => {
-    setTask(name);
-    setTaskOpen(false);
-    setDraftTask('');
-    if (name) setTasks(await rememberTask(name));
-  }, []);
+  const { checkpoint } = timer;
+  const chooseTask = useCallback(
+    async (name) => {
+      checkpoint();
+      setTask(name);
+      setTaskOpen(false);
+      setDraftTask('');
+      if (name) setTasks(await rememberTask(name));
+    },
+    [checkpoint]
+  );
 
   const today = stats[dateKey()] || { minutes: 0, sessions: 0 };
 
@@ -118,9 +134,9 @@ export default function App() {
           />
           <View style={styles.header}>
             <View style={styles.brandRow}>
-              <Text style={styles.brand}>집중</Text>
+              <Text style={styles.brand}>디노</Text>
               <View style={styles.brandBadge}>
-                <Text style={styles.brandBadgeText}>ON</Text>
+                <Text style={styles.brandBadgeText}>콘</Text>
               </View>
             </View>
 
@@ -134,7 +150,7 @@ export default function App() {
           </View>
 
           <Text style={styles.subline}>
-            오늘 {today.minutes}분 · 세션 {today.sessions}개
+            오늘 {formatMinutes(today.minutes)} · 세션 {today.sessions}개
           </Text>
 
           <View style={styles.segment}>
@@ -318,7 +334,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  // 크레용 그림 톤에 맞춰, 이름 뒤쪽 ON 만 형광펜으로 그은 것처럼 처리한다.
+  // 크레용 그림 톤에 맞춰, 이름 뒤쪽 콘 만 형광펜으로 그은 것처럼 처리한다.
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   brand: {
     fontFamily: font.bold,

@@ -1,18 +1,32 @@
-import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { dateKey, formatMinutes, lastDays, streakOf, totalOf } from './storage';
+import {
+  dateKey,
+  formatMinutes,
+  formatShort,
+  historyOf,
+  lastDays,
+  splitMinutes,
+  streakOf,
+  totalOf,
+} from './storage';
 import { colors, font, radius } from './theme';
 import { Card, Label } from './ui';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+const HISTORY_PREVIEW = 14;
 
 export default function StatsScreen({ stats }) {
   const today = stats[dateKey()] || { minutes: 0, sessions: 0, tasks: {} };
   const week = useMemo(() => lastDays(stats, 7), [stats]);
   const streak = useMemo(() => streakOf(stats), [stats]);
   const total = useMemo(() => totalOf(stats), [stats]);
+  const history = useMemo(() => historyOf(stats), [stats]);
+  const [showAll, setShowAll] = useState(false);
+  const todayTime = splitMinutes(today.minutes);
+  const visibleHistory = showAll ? history : history.slice(0, HISTORY_PREVIEW);
 
   const peak = Math.max(60, ...week.map((d) => d.minutes));
 
@@ -30,7 +44,13 @@ export default function StatsScreen({ stats }) {
         <Label>오늘</Label>
 
         <View style={styles.heroRow}>
-          <Text style={styles.heroValue}>{today.minutes}</Text>
+          {todayTime.hours > 0 && (
+            <>
+              <Text style={styles.heroValue}>{todayTime.hours}</Text>
+              <Text style={[styles.heroUnit, styles.heroUnitGap]}>시간</Text>
+            </>
+          )}
+          <Text style={styles.heroValue}>{todayTime.mins}</Text>
           <Text style={styles.heroUnit}>분</Text>
         </View>
 
@@ -67,7 +87,9 @@ export default function StatsScreen({ stats }) {
 
             return (
               <View key={day.key} style={styles.barColumn}>
-                <Text style={styles.barValue}>{day.minutes || ''}</Text>
+                <Text style={styles.barValue} numberOfLines={1}>
+                  {formatShort(day.minutes)}
+                </Text>
                 <View style={styles.barTrack}>
                   <View
                     style={[
@@ -112,6 +134,35 @@ export default function StatsScreen({ stats }) {
         )}
       </Card>
 
+      <Card>
+        <Label>날짜별 공부 시간</Label>
+        {history.length === 0 ? (
+          <Text style={styles.empty}>집중한 시간이 날짜별로 여기에 쌓입니다.</Text>
+        ) : (
+          <View style={styles.historyList}>
+            {visibleHistory.map((day) => (
+              <View key={day.key} style={styles.historyRow}>
+                <Text style={styles.historyDate}>
+                  {day.date.getMonth() + 1}월 {day.date.getDate()}일
+                  <Text style={styles.historyWeekday}> ({WEEKDAYS[day.date.getDay()]})</Text>
+                </Text>
+                <Text style={styles.historySessions}>
+                  {day.sessions ? `세션 ${day.sessions}` : ''}
+                </Text>
+                <Text style={styles.historyTime}>{formatMinutes(day.minutes)}</Text>
+              </View>
+            ))}
+            {history.length > HISTORY_PREVIEW && (
+              <Pressable onPress={() => setShowAll((v) => !v)} hitSlop={8} style={styles.more}>
+                <Text style={styles.moreText}>
+                  {showAll ? '접기' : `전체 보기 (${history.length}일)`}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+      </Card>
+
       <View style={styles.note}>
         <Ionicons name="bulb-outline" size={15} color={colors.accent} />
         <Text style={styles.noteText}>
@@ -147,6 +198,7 @@ const styles = StyleSheet.create({
     letterSpacing: -2,
   },
   heroUnit: { fontFamily: font.semibold, color: colors.textDim, fontSize: 19 },
+  heroUnitGap: { marginRight: 8 },
   tomatoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   tomatoMore: { fontFamily: font.semibold, color: colors.textFaint, fontSize: 12 },
   tomatoEmpty: { fontFamily: font.regular, color: colors.textFaint, fontSize: 12 },
@@ -198,6 +250,21 @@ const styles = StyleSheet.create({
   },
   taskName: { flex: 1, fontFamily: font.regular, color: colors.text, fontSize: 14 },
   taskMinutes: { fontFamily: font.semibold, color: colors.textDim, fontSize: 13 },
+
+  historyList: { marginTop: 12 },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.line,
+  },
+  historyDate: { fontFamily: font.semibold, color: colors.text, fontSize: 14, width: 104 },
+  historyWeekday: { fontFamily: font.regular, color: colors.textFaint, fontSize: 13 },
+  historySessions: { flex: 1, fontFamily: font.regular, color: colors.textFaint, fontSize: 12 },
+  historyTime: { fontFamily: font.bold, color: colors.text, fontSize: 14 },
+  more: { alignSelf: 'center', paddingTop: 12 },
+  moreText: { fontFamily: font.semibold, color: colors.accent, fontSize: 13 },
 
   note: {
     flexDirection: 'row',

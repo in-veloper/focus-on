@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "집중:ON",
+    "name": "디노콘",
     "slug": "focus-on",
-    "version": "1.6.4",
+    "version": "1.7.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -11,7 +11,7 @@
     },
     "android": {
       "package": "com.focuson.app",
-      "versionCode": 18,
+      "versionCode": 20,
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",

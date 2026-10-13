@@ -47,21 +47,66 @@ export async function loadStats() {
   }
 }
 
-// 집중 한 판이 끝날 때마다 그날 기록에 더한다.
-export async function recordSession({ minutes, task }) {
-  const stats = await loadStats();
-  const key = dateKey();
+// 읽고-고치고-쓰는 기록 작업이 겹치면 한쪽이 덮어써지므로 차례로 실행한다.
+let writeQueue = Promise.resolve();
+function queued(fn) {
+  const run = writeQueue.then(fn, fn);
+  writeQueue = run.catch(() => {});
+  return run;
+}
+
+function dayOf(stats, key) {
   const day = stats[key] || { minutes: 0, sessions: 0, tasks: {} };
-
-  day.minutes += minutes;
-  day.sessions += 1;
-
-  const name = (task || '').trim();
-  if (name) day.tasks[name] = (day.tasks[name] || 0) + minutes;
-
+  if (!day.tasks) day.tasks = {};
   stats[key] = day;
-  await AsyncStorage.setItem(STATS_KEY, JSON.stringify(stats));
-  return stats;
+  return day;
+}
+
+// 집중 모드로 실제 흐른 구간(start~end, ms)을 더한다. 중간에 멈춘 시간도 그대로 쌓이고,
+// 자정을 넘긴 구간은 날짜별로 나눠 넣는다. minutes 는 소수(초 단위 정밀도)로 쌓인다.
+export function recordFocus({ start, end, task }) {
+  return queued(async () => {
+    const stats = await loadStats();
+    const name = (task || '').trim();
+
+    let from = start;
+    while (from < end) {
+      const d = new Date(from);
+      const midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
+      const to = Math.min(end, midnight);
+      const minutes = (to - from) / 60000;
+
+      const day = dayOf(stats, dateKey(d));
+      day.minutes += minutes;
+      if (name) day.tasks[name] = (day.tasks[name] || 0) + minutes;
+
+      from = to;
+    }
+
+    await AsyncStorage.setItem(STATS_KEY, JSON.stringify(stats));
+    return stats;
+  });
+}
+
+// 집중 한 판을 끝까지 채웠을 때만 세션 수를 올린다.
+export function recordSessionDone() {
+  return queued(async () => {
+    const stats = await loadStats();
+    dayOf(stats, dateKey()).sessions += 1;
+    await AsyncStorage.setItem(STATS_KEY, JSON.stringify(stats));
+    return stats;
+  });
+}
+
+// 공부한 날만 최근 날짜부터.
+export function historyOf(stats) {
+  return Object.entries(stats)
+    .filter(([, day]) => (day.minutes || 0) >= 1)
+    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .map(([key, day]) => {
+      const [y, m, d] = key.split('-').map(Number);
+      return { key, date: new Date(y, m - 1, d), ...day };
+    });
 }
 
 export async function loadTasks() {
@@ -133,10 +178,22 @@ export function totalOf(stats) {
   );
 }
 
+// minutes 는 소수일 수 있어서 초로 반올림한 뒤 분 단위로 내린다.
+export function splitMinutes(minutes) {
+  const whole = Math.floor(Math.round((minutes || 0) * 60) / 60);
+  return { hours: Math.floor(whole / 60), mins: whole % 60 };
+}
+
 export function formatMinutes(minutes) {
-  if (!minutes) return '0분';
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  if (!hours) return `${rest}분`;
-  return rest ? `${hours}시간 ${rest}분` : `${hours}시간`;
+  const { hours, mins } = splitMinutes(minutes);
+  if (!hours) return `${mins}분`;
+  return mins ? `${hours}시간 ${mins}분` : `${hours}시간`;
+}
+
+// 막대그래프 위처럼 좁은 자리에 쓰는 짧은 표기.
+export function formatShort(minutes) {
+  const { hours, mins } = splitMinutes(minutes);
+  if (!hours && !mins) return '';
+  if (!hours) return `${mins}분`;
+  return `${(hours + mins / 60).toFixed(1)}h`;
 }

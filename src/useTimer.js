@@ -14,7 +14,7 @@ const END_TEXT = {
   longBreak: { title: '긴 휴식 끝', body: '다시 집중할 시간입니다.' },
 };
 
-export function useTimer({ settings, onFocusDone }) {
+export function useTimer({ settings, onFocusTime, onSessionDone }) {
   const durationOf = useCallback(
     (mode) => Math.max(1, settings[mode] || 25) * 60000,
     [settings]
@@ -32,18 +32,32 @@ export function useTimer({ settings, onFocusDone }) {
   const modeRef = useRef(mode);
   const roundRef = useRef(round);
   const settingsRef = useRef(settings);
-  const onFocusDoneRef = useRef(onFocusDone);
+  const onFocusTimeRef = useRef(onFocusTime);
+  const onSessionDoneRef = useRef(onSessionDone);
   const completeRef = useRef(null);
+  // 집중 모드로 시간이 흐르기 시작한 시각. 멈추거나 끝날 때 여기까지를 기록하고 비운다.
+  const segStartRef = useRef(null);
 
   modeRef.current = mode;
   roundRef.current = round;
   settingsRef.current = settings;
-  onFocusDoneRef.current = onFocusDone;
+  onFocusTimeRef.current = onFocusTime;
+  onSessionDoneRef.current = onSessionDone;
 
   const clearNotification = useCallback(async () => {
     const id = notifRef.current;
     notifRef.current = null;
     await cancelScheduled(id);
+  }, []);
+
+  // 지금까지 흐른 집중 시간을 기록한다. keepGoing 이면 이어서 다시 잰다.
+  const flushFocus = useCallback((keepGoing = false) => {
+    const from = segStartRef.current;
+    if (from == null) return;
+    const now = Date.now();
+    const end = endsAtRef.current ? Math.min(now, endsAtRef.current) : now;
+    segStartRef.current = keepGoing ? end : null;
+    if (end - from >= 1000) onFocusTimeRef.current?.(from, end);
   }, []);
 
   const start = useCallback(
@@ -52,6 +66,7 @@ export function useTimer({ settings, onFocusDone }) {
       if (total <= 0) return;
 
       endsAtRef.current = Date.now() + total;
+      if (modeRef.current === 'focus') segStartRef.current = Date.now();
       remainingRef.current = total;
       setRemaining(total);
       setRunning(true);
@@ -67,6 +82,7 @@ export function useTimer({ settings, onFocusDone }) {
   );
 
   const pause = useCallback(() => {
+    flushFocus();
     const end = endsAtRef.current;
     const left = end ? Math.max(0, end - Date.now()) : remainingRef.current;
 
@@ -75,12 +91,13 @@ export function useTimer({ settings, onFocusDone }) {
     setRemaining(left);
     setRunning(false);
     clearNotification();
-  }, [clearNotification]);
+  }, [clearNotification, flushFocus]);
 
   const complete = useCallback(
     (recorded = true) => {
       const finished = modeRef.current;
 
+      flushFocus();
       endsAtRef.current = null;
       setRunning(false);
       clearNotification();
@@ -94,7 +111,7 @@ export function useTimer({ settings, onFocusDone }) {
 
       let nextRound = roundRef.current;
       if (finished === 'focus') {
-        if (recorded) onFocusDoneRef.current?.(settingsRef.current.focus);
+        if (recorded) onSessionDoneRef.current?.();
         nextRound += 1;
         setRound(nextRound);
         roundRef.current = nextRound;
@@ -122,7 +139,7 @@ export function useTimer({ settings, onFocusDone }) {
 
       if (auto) start(ms);
     },
-    [clearNotification, start]
+    [clearNotification, start, flushFocus]
   );
 
   completeRef.current = complete;
@@ -150,7 +167,12 @@ export function useTimer({ settings, onFocusDone }) {
   // 앱을 다시 열었을 때 남은 시간을 곧바로 맞춘다.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next) => {
-      if (next !== 'active' || !endsAtRef.current) return;
+      // 백그라운드로 갈 때 그때까지 잰 시간을 미리 저장해 둔다(앱이 그대로 종료돼도 안 날아가게).
+      if (next !== 'active') {
+        flushFocus(true);
+        return;
+      }
+      if (!endsAtRef.current) return;
 
       const left = endsAtRef.current - Date.now();
       if (left <= 0) {
@@ -163,7 +185,7 @@ export function useTimer({ settings, onFocusDone }) {
     });
 
     return () => sub.remove();
-  }, []);
+  }, [flushFocus]);
 
   useEffect(() => {
     if (!running || !settings.keepAwake) return undefined;
@@ -194,6 +216,7 @@ export function useTimer({ settings, onFocusDone }) {
 
   const changeMode = useCallback(
     (next) => {
+      flushFocus();
       endsAtRef.current = null;
       setRunning(false);
       clearNotification();
@@ -205,7 +228,7 @@ export function useTimer({ settings, onFocusDone }) {
       remainingRef.current = ms;
       setRemaining(ms);
     },
-    [clearNotification, durationOf]
+    [clearNotification, durationOf, flushFocus]
   );
 
   const toggle = useCallback(() => {
@@ -214,6 +237,8 @@ export function useTimer({ settings, onFocusDone }) {
   }, [running, pause, start]);
 
   const reset = useCallback(() => changeMode(modeRef.current), [changeMode]);
+  // 집중 중에 과목을 바꿀 때, 그때까지 흐른 시간을 이전 과목으로 먼저 저장한다.
+  const checkpoint = useCallback(() => flushFocus(true), [flushFocus]);
   const skip = useCallback(() => complete(false), [complete]);
 
   return {
@@ -225,6 +250,7 @@ export function useTimer({ settings, onFocusDone }) {
     toggle,
     reset,
     skip,
+    checkpoint,
     changeMode,
   };
 }
