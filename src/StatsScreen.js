@@ -12,7 +12,7 @@ import {
   streakOf,
   totalOf,
 } from './storage';
-import { colors, font, radius } from './theme';
+import { MODES, colors, font, radius } from './theme';
 import { Card, Label } from './ui';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -41,7 +41,7 @@ export default function StatsScreen({ stats }) {
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
       <Card style={styles.hero}>
-        <Label>오늘</Label>
+        <Label style={styles.heroLabel}>오늘</Label>
 
         <View style={styles.heroRow}>
           {todayTime.hours > 0 && (
@@ -56,7 +56,7 @@ export default function StatsScreen({ stats }) {
 
         <View style={styles.tomatoRow}>
           {Array.from({ length: Math.min(today.sessions, 10) }, (_, i) => (
-            <Ionicons key={i} name="ellipse" size={12} color={colors.accent} />
+            <Ionicons key={i} name="ellipse" size={12} color={colors.onAccent} />
           ))}
           {today.sessions > 10 && (
             <Text style={styles.tomatoMore}>+{today.sessions - 10}</Text>
@@ -68,13 +68,26 @@ export default function StatsScreen({ stats }) {
       </Card>
 
       <View style={styles.summaryRow}>
-        <Summary value={`${today.sessions}`} unit="개" caption="오늘 세션" />
-        <Summary value={`${streak}`} unit="일" caption="연속 기록" tint={'#3DD9C0'} />
         <Summary
+          icon="checkmark-circle"
+          value={`${today.sessions}`}
+          unit="개"
+          caption="오늘 세션"
+          tint={MODES.focus.tint}
+        />
+        <Summary
+          icon="flame"
+          value={`${streak}`}
+          unit="일"
+          caption="연속 기록"
+          tint={MODES.shortBreak.tint}
+        />
+        <Summary
+          icon="hourglass"
           value={`${Math.round(total.minutes / 60)}`}
           unit="시간"
           caption="누적 집중"
-          tint={'#5B8CFF'}
+          tint={MODES.longBreak.tint}
         />
       </View>
 
@@ -174,11 +187,14 @@ export default function StatsScreen({ stats }) {
   );
 }
 
-function Summary({ value, unit, caption, tint }) {
+function Summary({ icon, value, unit, caption, tint }) {
   return (
     <View style={styles.summary}>
+      <View style={[styles.summaryIcon, { backgroundColor: tint + '26' }]}>
+        <Ionicons name={icon} size={15} color={tint} />
+      </View>
       <View style={styles.summaryRowInner}>
-        <Text style={[styles.summaryValue, tint && { color: tint }]}>{value}</Text>
+        <Text style={styles.summaryValue}>{value}</Text>
         <Text style={styles.summaryUnit}>{unit}</Text>
       </View>
       <Text style={styles.summaryCaption}>{caption}</Text>
@@ -189,28 +205,39 @@ function Summary({ value, unit, caption, tint }) {
 const styles = StyleSheet.create({
   list: { gap: 12, paddingBottom: 8 },
 
-  hero: { gap: 10 },
+  hero: { gap: 10, backgroundColor: colors.accent, borderColor: colors.accent },
+  heroLabel: { color: 'rgba(255, 253, 247, 0.72)' },
   heroRow: { flexDirection: 'row', alignItems: 'baseline', gap: 3, marginTop: -2 },
   heroValue: {
     fontFamily: font.bold,
-    color: colors.text,
-    fontSize: 44,
+    color: colors.onAccent,
+    fontSize: 48,
     letterSpacing: -2,
   },
-  heroUnit: { fontFamily: font.semibold, color: colors.textDim, fontSize: 19 },
+  heroUnit: { fontFamily: font.semibold, color: 'rgba(255, 253, 247, 0.8)', fontSize: 19 },
   heroUnitGap: { marginRight: 8 },
   tomatoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  tomatoMore: { fontFamily: font.semibold, color: colors.textFaint, fontSize: 12 },
-  tomatoEmpty: { fontFamily: font.regular, color: colors.textFaint, fontSize: 12 },
+  tomatoMore: { fontFamily: font.semibold, color: 'rgba(255, 253, 247, 0.8)', fontSize: 12 },
+  tomatoEmpty: { fontFamily: font.regular, color: 'rgba(255, 253, 247, 0.72)', fontSize: 12 },
 
   summaryRow: { flexDirection: 'row', gap: 10 },
   summary: {
     flex: 1,
     gap: 4,
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 14,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+  },
+  summaryIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
   },
   summaryRowInner: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
   summaryValue: {
@@ -230,7 +257,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     borderRadius: radius.sm,
-    backgroundColor: colors.surfaceHigh,
+    backgroundColor: colors.surfaceSoft,
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },

@@ -32,7 +32,7 @@ import {
   saveSettings,
 } from './src/storage';
 import { colors, font, radius } from './src/theme';
-import { Label, Sheet, StepperRow, ToggleRow } from './src/ui';
+import { Group, Label, Sheet, StepperRow, ToggleRow } from './src/ui';
 import { useTimer } from './src/useTimer';
 
 const TABS = [
@@ -134,9 +134,14 @@ export default function App() {
           />
           <View style={styles.header}>
             <View style={styles.brandRow}>
-              <Text style={styles.brand}>디노</Text>
-              <View style={styles.brandBadge}>
-                <Text style={styles.brandBadgeText}>콘</Text>
+              <View style={styles.wordmark}>
+                <Text style={styles.brand}>DINO</Text>
+                {/* 콜론은 시계 골판과 같은 초록 점 두 개로 */}
+                <View style={styles.colon}>
+                  <View style={styles.colonDot} />
+                  <View style={styles.colonDot} />
+                </View>
+                <Text style={styles.brand}>CON</Text>
               </View>
             </View>
 
@@ -242,6 +247,7 @@ export default function App() {
       <Sheet visible={settingsOpen} title="설정" onClose={() => setSettingsOpen(false)}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <Label>시간</Label>
+          <Group>
           <StepperRow
             title="집중"
             value={settings.focus}
@@ -276,8 +282,10 @@ export default function App() {
             max={8}
             onChange={(v) => update({ roundsBeforeLong: v })}
           />
+          </Group>
 
           <Label style={styles.sectionLabel}>진행</Label>
+          <Group>
           <ToggleRow
             icon="play-forward"
             title="휴식 자동 시작"
@@ -292,8 +300,10 @@ export default function App() {
             value={settings.autoStartFocus}
             onChange={(v) => update({ autoStartFocus: v })}
           />
+          </Group>
 
           <Label style={styles.sectionLabel}>알림</Label>
+          <Group>
           <ToggleRow
             icon="notifications-outline"
             title="종료 알림"
@@ -314,6 +324,7 @@ export default function App() {
             value={settings.keepAwake}
             onChange={(v) => update({ keepAwake: v })}
           />
+          </Group>
         </ScrollView>
       </Sheet>
     </SafeAreaView>
@@ -334,26 +345,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  // 크레용 그림 톤에 맞춰, 이름 뒤쪽 콘 만 형광펜으로 그은 것처럼 처리한다.
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  wordmark: { flexDirection: 'row', alignItems: 'center' },
   brand: {
     fontFamily: font.bold,
     color: colors.text,
-    fontSize: 22,
-    letterSpacing: -0.5,
+    fontSize: 23,
+    letterSpacing: 0.6,
+    includeFontPadding: false,
   },
-  brandBadge: {
-    backgroundColor: colors.accent,
-    borderRadius: 9,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    transform: [{ rotate: '-4deg' }],
-  },
-  brandBadgeText: {
-    fontFamily: font.bold,
-    color: colors.onAccent,
-    fontSize: 17,
-    letterSpacing: 0.3,
+  colon: { gap: 5, marginHorizontal: 4, marginTop: 1 },
+  colonDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.plate,
   },
   gear: {
     width: 40,
@@ -374,22 +380,28 @@ const styles = StyleSheet.create({
 
   segment: {
     flexDirection: 'row',
-    alignSelf: 'flex-start',
     backgroundColor: colors.surfaceHigh,
     borderRadius: radius.pill,
     padding: 4,
-    gap: 4,
     marginTop: 16,
     marginBottom: 10,
   },
   segmentItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 9,
     borderRadius: radius.pill,
   },
-  segmentItemActive: { backgroundColor: colors.accent },
+  segmentItemActive: {
+    backgroundColor: colors.surface,
+    elevation: 2,
+    shadowColor: '#3A2E20',
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+  },
   segmentText: { fontFamily: font.semibold, color: colors.textDim, fontSize: 13 },
-  segmentTextActive: { fontFamily: font.bold, color: colors.onAccent },
+  segmentTextActive: { fontFamily: font.bold, color: colors.text },
 
   content: { flex: 1 },
 
@@ -415,7 +427,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
 
-  sectionLabel: { marginTop: 22, marginBottom: 2 },
+  sectionLabel: { marginTop: 22, marginBottom: 0 },
   taskList: { maxHeight: 240, marginTop: 6 },
   taskRow: { flexDirection: 'row', alignItems: 'center' },
   taskPick: {

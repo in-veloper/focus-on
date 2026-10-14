@@ -1,11 +1,13 @@
 // 공룡 크레용 그림의 색을 그대로 가져왔다: 잎사귀 초록, 골판 노랑, 종이 크림.
 export const colors = {
-  bg: '#FBF3E3',
+  // 그림 바탕과 같은 크림색. 장식 그림의 반투명 가장자리가 바탕과 이어져 보이게 맞춘다.
+  bg: '#FCF7EE',
   surface: '#FFFDF7',
   surfaceHigh: '#F4E7C9',
   surfaceSoft: 'rgba(58, 46, 32, 0.05)',
 
-  line: 'rgba(58, 46, 32, 0.10)',
+  line: 'rgba(58, 46, 32, 0.08)',
+  hairline: 'rgba(58, 46, 32, 0.06)',
   lineStrong: 'rgba(58, 46, 32, 0.22)',
 
   text: '#3A2E20',
@@ -25,6 +27,10 @@ export const colors = {
   dialTickMajor: 'rgba(58, 46, 32, 0.5)',
   dialNumber: '#9C8A6E',
   spike: '#F2B93A',
+  // 시계 둘레 골판 — 새 공룡 그림의 등 골판 초록
+  plate: '#6E9677',
+  plateLight: '#93B596',
+  plateLine: '#5D8467',
   spikeLine: '#2B2318',
 };
 

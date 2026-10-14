@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Children, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Keyboard,
@@ -16,6 +16,20 @@ import { colors, font, label, radius } from './theme';
 
 export function Card({ style, children }) {
   return <View style={[styles.card, style]}>{children}</View>;
+}
+
+// 설정 시트 안에서 행들을 한 덩어리 카드로 묶는다. 행 사이는 가는 선으로만 나눈다.
+export function Group({ children, style }) {
+  const rows = Children.toArray(children).filter(Boolean);
+  return (
+    <View style={[styles.group, style]}>
+      {rows.map((row, i) => (
+        <View key={i} style={i > 0 && styles.groupDivider}>
+          {row}
+        </View>
+      ))}
+    </View>
+  );
 }
 
 export function Label({ children, style }) {
@@ -186,7 +200,9 @@ export function Sheet({ visible, title, onClose, children }) {
 export function ToggleRow({ icon, title, description, value, onChange }) {
   return (
     <View style={styles.settingRow}>
-      <Ionicons name={icon} size={19} color={colors.textDim} />
+      <View style={styles.settingIcon}>
+        <Ionicons name={icon} size={17} color={colors.accent} />
+      </View>
       <View style={styles.settingBody}>
         <Text style={styles.settingTitle}>{title}</Text>
         {description ? (
@@ -196,7 +212,7 @@ export function ToggleRow({ icon, title, description, value, onChange }) {
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ false: colors.surfaceHigh, true: colors.accentDim }}
+        trackColor={{ false: colors.surfaceHigh, true: 'rgba(94, 156, 44, 0.45)' }}
         thumbColor={value ? colors.accent : colors.textFaint}
       />
     </View>
@@ -237,9 +253,18 @@ export function StepperRow({ title, value, unit, min, max, step = 1, onChange })
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: 18,
+    borderRadius: radius.xl,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.hairline,
   },
+  group: {
+    backgroundColor: colors.bg,
+    borderRadius: radius.lg,
+    paddingHorizontal: 14,
+    marginTop: 8,
+  },
+  groupDivider: { borderTopWidth: 1, borderTopColor: colors.line },
   label: { ...label },
   dimmed: { opacity: 0.4 },
   pressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
@@ -281,6 +306,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.xl,
     paddingHorizontal: 20,
     paddingBottom: 28,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: colors.hairline,
   },
   dragZone: { height: 38, alignItems: 'center', justifyContent: 'center' },
   grabber: {
@@ -301,9 +329,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line,
+    paddingVertical: 13,
+  },
+  settingIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accentDim,
   },
   settingBody: { flex: 1 },
   settingTitle: { fontFamily: font.semibold, color: colors.text, fontSize: 15 },
@@ -319,9 +353,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: colors.surfaceHigh,
+    backgroundColor: colors.surface,
     borderRadius: radius.pill,
     padding: 4,
+    borderWidth: 1,
+    borderColor: colors.hairline,
   },
   stepperButton: {
     width: 30,

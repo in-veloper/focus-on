@@ -4,15 +4,33 @@ import { Ionicons } from '@expo/vector-icons';
 import Dial from './Dial';
 import { MODES, colors, font, radius } from './theme';
 
-// 두 그림은 공룡이 차지하는 비율이 달라서(집중 54%, 휴식 73%),
-// 같은 높이로 그리면 공룡 크기가 달라 보인다. 그래서 배율을 따로 준다.
-// 칸 높이 자체는 이 중 가장 큰 배율(focus)에 맞춰 고정되니, 휴식 쪽
-// 배율을 그 값에 가깝게 올려도 시계 위치는 흔들리지 않는다.
+// 하단 공룡: 집중은 공부하는 공룡, 휴식은 책 위에서 자는 공룡.
+// 두 그림의 공룡 크기가 비슷해서 같은 높이 칸에 그대로 그린다.
 const ART = {
-  focus: { source: require('../assets/art/focus.png'), scale: 1.35 },
-  shortBreak: { source: require('../assets/art/rest.png'), scale: 1.3 },
-  longBreak: { source: require('../assets/art/rest.png'), scale: 1.3 },
+  focus: require('../assets/art/v2/study.png'),
+  shortBreak: require('../assets/art/v2/sleep.png'),
+  longBreak: require('../assets/art/v2/sleep.png'),
 };
+
+const DECOR = {
+  checklist: { source: require('../assets/art/v2/checklist.png'), ratio: 274 / 237 },
+  headphones: { source: require('../assets/art/v2/headphones.png'), ratio: 232 / 258 },
+  cup: { source: require('../assets/art/v2/cup.png'), ratio: 221 / 160 },
+  clock: { source: require('../assets/art/v2/clock.png'), ratio: 235 / 238 },
+  pencils: { source: require('../assets/art/v2/pencils.png'), ratio: 200 / 129 },
+  dinoback: { source: require('../assets/art/v2/dinoback.png'), ratio: 191 / 186 },
+  books: { source: require('../assets/art/v2/books.png'), ratio: 211 / 253 },
+  book: { source: require('../assets/art/v2/book.png'), ratio: 119 / 201 },
+};
+
+// 시계 둘레 장식. angle 은 12시에서 시계 방향 각도, size 는 시계 지름 대비 폭,
+// push 는 골판에 가리지 않게 시계 테두리 밖으로 밀어내는 정도(그림 폭 대비).
+const DIAL_DECOR = [
+  { key: 'checklist', angle: 316, size: 0.16, rotate: -10, push: 0.62 },
+  { key: 'headphones', angle: 45, size: 0.17, rotate: 9, push: 0.55 },
+  { key: 'cup', angle: 228, size: 0.115, rotate: -7, push: 0.75 },
+  { key: 'clock', angle: 133, size: 0.13, rotate: 12, push: 0.6 },
+];
 
 export default function TimerScreen({ timer, settings, task, onPickTask }) {
   const { width, height } = useWindowDimensions();
@@ -20,13 +38,10 @@ export default function TimerScreen({ timer, settings, task, onPickTask }) {
 
   const dialSize = Math.min(width - 56, compact ? 292 : 328);
   const art = ART[timer.mode];
-  const artBase = compact ? 62 : 78;
-  const artHeight = Math.round(artBase * art.scale);
-  // 두 그림의 배율이 달라 높이가 다르다 — 그림 칸 자체는 가장 큰 높이로
-  // 고정해 두고 그 안에서 바닥에 붙여 그려야, 모드가 바뀔 때 칸 높이가
-  // 출렁여서 위쪽 시계가 오르락내리락하는 일이 없다.
-  const maxArtScale = Math.max(...Object.values(ART).map((a) => a.scale));
-  const artBoxHeight = Math.round(artBase * maxArtScale);
+  const artHeight = compact ? 104 : 124;
+  // 화면 좌우 여백(20)을 뺀 실제 폭. 장식이 화면 밖으로 나가지 않게 이 안으로 가둔다.
+  const innerWidth = width - 40;
+  const sideSpace = (innerWidth - dialSize) / 2;
 
   const mode = MODES[timer.mode];
   const rounds = Math.max(1, settings.roundsBeforeLong || 4);
@@ -42,16 +57,34 @@ export default function TimerScreen({ timer, settings, task, onPickTask }) {
           </Text>
         </View>
 
-        <Dial
-          size={dialSize}
-          remainingMs={timer.remaining}
-          totalMs={timer.total}
-          tint={mode.tint}
-          label={formatClock(timer.remaining)}
-        />
+        <View style={{ width: dialSize, height: dialSize }}>
+          {DIAL_DECOR.map((d) => {
+            const w = dialSize * d.size;
+            const h = w * DECOR[d.key].ratio;
+            const rad = ((d.angle - 90) * Math.PI) / 180;
+            const dist = dialSize / 2 + w * d.push;
+            let left = dialSize / 2 + Math.cos(rad) * dist - w / 2;
+            const top = dialSize / 2 + Math.sin(rad) * dist - h / 2;
+            // 좁은 화면에서도 화면 가장자리 밖으로 나가지 않게
+            left = Math.max(-sideSpace, Math.min(dialSize + sideSpace - w, left));
+            return (
+              <Decor key={d.key} name={d.key} width={w} rotate={d.rotate} style={{ left, top }} />
+            );
+          })}
+          <Dial
+            size={dialSize}
+            remainingMs={timer.remaining}
+            totalMs={timer.total}
+            tint={mode.tint}
+            label={formatClock(timer.remaining)}
+            running={timer.running}
+          />
+        </View>
       </View>
 
       <View style={styles.middle}>
+        <Decor name="pencils" width={30} rotate={-9} style={styles.decorMiddleLeft} />
+        <Decor name="dinoback" width={44} rotate={4} style={styles.decorMiddleRight} />
         <View style={styles.controls}>
           <Pressable
             onPress={timer.reset}
@@ -98,14 +131,28 @@ export default function TimerScreen({ timer, settings, task, onPickTask }) {
         </Pressable>
       </View>
 
-      <View style={[styles.artBox, { height: artBoxHeight }]}>
-        <Image
-          source={art.source}
-          style={[styles.art, { height: artHeight }]}
-          resizeMode="contain"
-        />
+      <View style={[styles.artBox, { height: artHeight }]}>
+        <Decor name="books" width={compact ? 54 : 62} rotate={-5} style={styles.decorBottomLeft} />
+        <Decor name="book" width={compact ? 50 : 58} rotate={7} style={styles.decorBottomRight} />
+        <Image source={art} style={[styles.art, { height: artHeight }]} resizeMode="contain" />
       </View>
     </View>
+  );
+}
+
+function Decor({ name, width, rotate, style }) {
+  const item = DECOR[name];
+  return (
+    <Image
+      source={item.source}
+      resizeMode="contain"
+      pointerEvents="none"
+      style={[
+        styles.decor,
+        { width, height: width * item.ratio, transform: [{ rotate: `${rotate}deg` }] },
+        style,
+      ]}
+    />
   );
 }
 
@@ -137,7 +184,13 @@ const styles = StyleSheet.create({
   },
   modeText: { fontFamily: font.bold, fontSize: 12 },
 
-  middle: { alignItems: 'center', gap: 16 },
+  middle: { alignSelf: 'stretch', alignItems: 'center', gap: 16 },
+
+  decor: { position: 'absolute' },
+  decorMiddleLeft: { left: 14, top: 8 },
+  decorMiddleRight: { right: 10, top: 6 },
+  decorBottomLeft: { left: 6, bottom: 4 },
+  decorBottomRight: { right: 8, bottom: 6 },
 
   controls: { flexDirection: 'row', alignItems: 'center', gap: 24 },
   smallButton: {
@@ -170,17 +223,19 @@ const styles = StyleSheet.create({
     gap: 7,
     maxWidth: '82%',
     paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingVertical: 8,
     borderRadius: radius.pill,
-    backgroundColor: colors.surfaceSoft,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
   },
   taskText: {
     fontFamily: font.semibold,
     color: colors.textFaint,
-    fontSize: 12,
+    fontSize: 13,
     flexShrink: 1,
   },
 
-  artBox: { width: '100%', justifyContent: 'flex-end' },
-  art: { width: '100%' },
+  artBox: { width: '100%', justifyContent: 'flex-end', alignItems: 'center' },
+  art: { width: '60%' },
 });
