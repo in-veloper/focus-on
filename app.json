@@ -2,7 +2,7 @@
   "expo": {
     "name": "디노콘",
     "slug": "focus-on",
-    "version": "1.9.8",
+    "version": "1.9.9",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -11,12 +11,12 @@
     },
     "android": {
       "package": "com.focuson.app",
-      "versionCode": 34,
+      "versionCode": 35,
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png",
-        "backgroundColor": "#FEF4E2"
+        "backgroundColor": "#FCF7E9"
       },
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
